@@ -1,0 +1,24 @@
+{
+  "expo": {
+    "name": "CycleCare",
+    "slug": "cyclecare",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "userInterfaceStyle": "light",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.cyclecare.app",
+      "infoPlist": {
+        "NSHealthShareUsageDescription": "CycleCare ne lit pas les données Santé sans consentement explicite.",
+        "NSHealthUpdateUsageDescription": "CycleCare ne modifie pas les données Santé sans consentement explicite."
+      }
+    },
+    "android": {
+      "package": "com.cyclecare.app"
+    },
+    "extra": {
+      "supabaseUrl": "",
+      "supabaseAnonKey": ""
+    }
+  }
+}

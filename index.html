@@ -1,0 +1,304 @@
+<!doctype html>
+<html lang="fr">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-title" content="CycleCare" />
+    <meta name="theme-color" content="#f8f6f2" />
+    <title>CycleCare</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <div class="app-shell">
+      <aside class="sidebar" aria-label="Menu de l’application">
+        <div class="brand">
+          <div class="brand-mark" aria-hidden="true"></div>
+          <div>
+            <p class="brand-name">CycleCare</p>
+            <p class="brand-subtitle">Cycle & harmonie du couple</p>
+          </div>
+        </div>
+
+        <nav class="nav" aria-label="Navigation principale">
+          <a href="#dashboard" class="nav-link active">Vue cycle</a>
+          <a href="#profile" class="nav-link">Profil</a>
+          <a href="#partner" class="nav-link">Contact</a>
+          <a href="#premium" class="nav-link">Couple+</a>
+          <a href="#messages" class="nav-link">Messages</a>
+          <a href="#privacy" class="nav-link">Confidentialité</a>
+        </nav>
+
+        <div class="privacy-note">
+          <strong>Partage choisi</strong>
+          <span>La personne qui suit son cycle garde le contrôle. Chaque envoi doit être consenti et confirmé.</span>
+        </div>
+      </aside>
+
+      <main class="main">
+        <header class="hero-intro">
+          <div class="hero-copy">
+            <p class="eyebrow">CycleCare pour les couples</p>
+            <h1>Transformer le cycle en langage d’amour.</h1>
+            <p class="hero-text">
+              Une app douce et privée pour suivre son cycle, puis partager au bon moment des repères simples avec son homme: comprendre, anticiper, soutenir.
+            </p>
+            <div class="hero-actions">
+              <a class="primary-button as-link" href="#profile">Commencer</a>
+              <a class="ghost-button as-link" href="#privacy">Voir la confidentialité</a>
+            </div>
+            <div class="trust-row" aria-label="Garanties principales">
+              <span>Consentement avant partage</span>
+              <span>Données minimisées</span>
+              <span>Conseils bienveillants</span>
+            </div>
+          </div>
+
+          <div class="phone-preview" aria-label="Aperçu de l’application">
+            <div class="phone-frame">
+              <div class="phone-status">
+                <span>CycleCare</span>
+                <span>Privé</span>
+              </div>
+              <div class="phone-moon"></div>
+              <p class="phone-label">Aujourd’hui</p>
+              <p class="phone-title">Écoute et douceur</p>
+              <p class="phone-body">Proposer de l’aide concrète, éviter les tensions et créer un moment calme.</p>
+              <div class="phone-card">
+                <span>Message partenaire</span>
+                <strong>Prêt à envoyer</strong>
+              </div>
+            </div>
+          </div>
+        </header>
+
+        <section class="hero-panel" id="dashboard">
+          <div class="health-disclaimer">
+            <strong>Information, pas diagnostic.</strong>
+            <span>Les estimations du cycle sont indicatives et ne remplacent jamais l’avis d’un professionnel de santé.</span>
+          </div>
+
+          <div class="cycle-summary">
+            <div>
+              <p class="label">Phase actuelle</p>
+              <h2 id="phaseName">À configurer</h2>
+              <p id="phaseDescription">Renseigne les dates du cycle pour obtenir une lecture personnalisée.</p>
+            </div>
+            <div class="cycle-ring" aria-label="Progression du cycle">
+              <svg viewBox="0 0 120 120" role="img">
+                <circle class="ring-bg" cx="60" cy="60" r="50"></circle>
+                <circle class="ring-progress" id="ringProgress" cx="60" cy="60" r="50"></circle>
+              </svg>
+              <div class="ring-center">
+                <span id="cycleDay">--</span>
+                <small>jour</small>
+              </div>
+            </div>
+          </div>
+
+          <div class="quick-grid">
+            <article>
+              <span class="metric" id="nextPeriod">--</span>
+              <p>Prochaines règles</p>
+            </article>
+            <article>
+              <span class="metric" id="fertileWindow">--</span>
+              <p>Fenêtre fertile estimée</p>
+            </article>
+            <article>
+              <span class="metric" id="notificationStatus">Non activé</span>
+              <p>Partage partenaire</p>
+            </article>
+          </div>
+        </section>
+
+        <section class="content-grid onboarding-grid">
+          <form class="panel form-panel profile-card" id="profile">
+            <div class="panel-heading split-heading">
+              <div>
+                <p class="eyebrow">Créer mon espace</p>
+                <h2>Mon cycle, mes repères</h2>
+              </div>
+              <span class="step-pill">Étape 1</span>
+            </div>
+            <p class="panel-intro">
+              Quelques informations suffisent pour estimer la phase du cycle et préparer des conseils à partager avec douceur.
+            </p>
+
+            <label>
+              <span class="field-label">Prénom</span>
+              <input id="personName" name="personName" type="text" placeholder="Ex. Amina" autocomplete="given-name" />
+            </label>
+
+            <label>
+              <span class="field-label">Premier jour des dernières règles</span>
+              <input id="lastPeriodDate" name="lastPeriodDate" type="date" required />
+            </label>
+
+            <div class="split-fields">
+              <label>
+                <span class="field-label">Durée du cycle</span>
+                <input id="cycleLength" name="cycleLength" type="number" min="20" max="45" value="28" />
+              </label>
+              <label>
+                <span class="field-label">Durée des règles</span>
+                <input id="periodLength" name="periodLength" type="number" min="2" max="10" value="5" />
+              </label>
+            </div>
+
+            <label>
+              <span class="field-label">Sensibilités à prendre en compte</span>
+              <textarea id="needs" name="needs" rows="4" placeholder="Ex. fatigue avant les règles, besoin de calme, douleurs le premier jour..."></textarea>
+            </label>
+
+            <button class="primary-button" type="submit">Mettre à jour le cycle</button>
+
+            <div class="form-trust-strip" aria-label="Garanties du profil">
+              <span>Données locales</span>
+              <span>Estimations indicatives</span>
+              <span>Contrôle total</span>
+            </div>
+          </form>
+
+          <form class="panel form-panel partner-card" id="partner">
+            <div class="panel-heading split-heading">
+              <div>
+                <p class="eyebrow">Partager avec lui</p>
+                <h2>Un homme mieux guidé</h2>
+              </div>
+              <span class="step-pill soft">Étape 2</span>
+            </div>
+            <p class="panel-intro">
+              Choisis la personne à informer. Elle recevra seulement les messages que tu confirmes.
+            </p>
+
+            <label>
+              <span class="field-label">Nom du contact</span>
+              <input id="partnerName" name="partnerName" type="text" placeholder="Ex. Karim" autocomplete="name" />
+            </label>
+
+            <label>
+              <span class="field-label">Adresse e-mail</span>
+              <input id="partnerEmail" name="partnerEmail" type="email" placeholder="karim@email.com" autocomplete="email" />
+            </label>
+
+            <label>
+              <span class="field-label">Numéro de téléphone</span>
+              <input id="partnerPhone" name="partnerPhone" type="tel" placeholder="+33 6 00 00 00 00" autocomplete="tel" />
+            </label>
+
+            <fieldset class="channel-group">
+              <legend>Canal de notification</legend>
+              <label><input id="sendEmail" type="checkbox" checked /> E-mail</label>
+              <label><input id="sendSms" type="checkbox" /> SMS</label>
+            </fieldset>
+
+            <label class="consent-row">
+              <input id="consent" type="checkbox" />
+              <span>Je confirme que ce partage est volontaire et peut être désactivé à tout moment.</span>
+            </label>
+
+            <button class="primary-button" type="submit">Enregistrer le contact</button>
+          </form>
+        </section>
+
+        <section class="panel premium-panel" id="premium">
+          <div class="premium-copy">
+            <p class="eyebrow">Plan payant conforme Apple</p>
+            <h2>Couple+ : partager les repères de tout le cycle</h2>
+            <p>
+              En version App Store, cette option doit être débloquée par un achat intégré Apple. Le plan payant augmente les envois possibles côté femme, tout en gardant le partage volontaire, clair et révocable.
+            </p>
+          </div>
+          <div class="premium-card">
+            <div class="premium-price">
+              <span>Couple+</span>
+              <strong>Plus d’envois</strong>
+            </div>
+            <ul class="premium-list">
+              <li>Plan gratuit: 2 envois de cycle par mois</li>
+              <li>Couple+: envois illimités raisonnables pour suivre tout le cycle</li>
+              <li>Validation du consentement avant activation</li>
+              <li>Contrôle total du destinataire et des canaux</li>
+              <li>Réponse courte du partenaire gardée optionnelle</li>
+            </ul>
+            <label class="consent-row">
+              <input id="premiumEnabled" type="checkbox" />
+              <span>Simuler le plan Couple+ activé via achat intégré Apple.</span>
+            </label>
+            <label class="consent-row">
+              <input id="partnerReplyAllowed" type="checkbox" />
+              <span>Autoriser aussi le destinataire à répondre une fois par notification.</span>
+            </label>
+          </div>
+        </section>
+
+        <section class="content-grid">
+          <article class="panel advice-panel">
+            <div class="panel-heading">
+              <p class="eyebrow">Conseils adaptés</p>
+              <h2>Ce qui aide vraiment maintenant</h2>
+            </div>
+            <ul class="advice-list" id="adviceList"></ul>
+          </article>
+
+          <article class="panel" id="messages">
+            <div class="panel-heading row-heading">
+              <div>
+                <p class="eyebrow">Notification</p>
+                <h2>Message prêt à envoyer</h2>
+              </div>
+              <button class="ghost-button compact" id="simulateSend" type="button">Simuler l’envoi</button>
+            </div>
+            <div class="message-preview" id="messagePreview">Complète le profil du cycle et le contact pour générer un message.</div>
+            <label class="consent-row send-consent">
+              <input id="confirmShare" type="checkbox" />
+              <span>Confirmer cet envoi précis au contact sélectionné.</span>
+            </label>
+            <div class="reply-box" id="replyBox">
+              <div>
+                <p class="eyebrow">Réponse Couple+</p>
+                <h3>Message reçu du destinataire</h3>
+              </div>
+              <p id="replyStatus">Active Couple+ et autorise les réponses pour tester cette option.</p>
+              <textarea id="partnerReplyText" rows="3" maxlength="180" placeholder="Ex. Je comprends, je m’occupe du dîner ce soir."></textarea>
+              <button class="ghost-button compact" id="simulateReply" type="button">Simuler 1 réponse</button>
+            </div>
+            <div class="history">
+              <h3>Historique</h3>
+              <ul id="historyList"></ul>
+            </div>
+          </article>
+        </section>
+
+        <section class="panel privacy-panel" id="privacy">
+          <div class="panel-heading">
+            <p class="eyebrow">Confidentialité</p>
+            <h2>Une app intime doit rester sous contrôle</h2>
+          </div>
+          <div class="privacy-grid">
+            <article>
+              <h3>Données utilisées</h3>
+              <p>Date des dernières règles, durée estimée du cycle, besoins déclarés et contact choisi. Aucune publicité, aucun suivi marketing.</p>
+            </article>
+            <article>
+              <h3>Stockage actuel</h3>
+              <p>Ce prototype garde les données uniquement dans ce navigateur avec localStorage. Une version App Store devra chiffrer les données et documenter la rétention.</p>
+            </article>
+            <article>
+              <h3>Partage</h3>
+              <p>Le partage au partenaire doit rester volontaire, révocable et confirmé avant chaque envoi contenant une information de cycle.</p>
+            </article>
+          </div>
+          <div class="data-actions">
+            <button class="ghost-button" id="exportButton" type="button">Exporter mes données</button>
+            <button class="danger-button" id="deleteButton" type="button">Supprimer toutes les données</button>
+            <button class="ghost-button" id="resetButton" type="button">Réinitialiser</button>
+          </div>
+        </section>
+      </main>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>
