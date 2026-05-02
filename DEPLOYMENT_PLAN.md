@@ -126,3 +126,15 @@ Pages publiques:
 - `/index.html`
 - `/privacy.html`
 - `/terms.html`
+
+URL Netlify actuelle:
+
+```text
+https://cyclecare-fr.netlify.app
+```
+
+URL de politique de confidentialité pour App Store Connect:
+
+```text
+https://cyclecare-fr.netlify.app/privacy
+```

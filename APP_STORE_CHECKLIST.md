@@ -18,6 +18,7 @@ Cette checklist prépare le prototype à une future soumission Apple App Store. 
 - Valider le périmètre MVP dans `MVP_LAUNCH_PLAN.md`.
 - Créer une app native iOS ou wrapper conforme avec APIs publiques Apple.
 - Ajouter une vraie politique de confidentialité hébergée publiquement et renseignée dans App Store Connect.
+- URL actuelle de politique de confidentialité: https://cyclecare-fr.netlify.app/privacy
 - Remplir les Privacy Nutrition Labels: santé, contact partenaire, identifiants éventuels, diagnostics si utilisés.
 - Chiffrer les données sensibles au repos et en transit.
 - Ne pas stocker d’informations de santé personnelles dans iCloud sauf conformité explicite.

@@ -46,3 +46,9 @@ npm run start
 - Supabase: backend, authentification, base de données.
 - Expo/EAS: builds iOS.
 - Apple App Store Connect: TestFlight puis publication.
+
+## URLs publiques
+
+- Site: https://cyclecare-fr.netlify.app
+- Confidentialité: https://cyclecare-fr.netlify.app/privacy
+- Conditions: https://cyclecare-fr.netlify.app/terms
