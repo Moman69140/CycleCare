@@ -4,6 +4,14 @@ Base Expo / React Native pour la future app iOS CycleCare.
 
 ## Installation
 
+Use Node 20 LTS for Expo:
+
+```bash
+node --version
+```
+
+If Node is newer than 22, switch to Node 20 before starting Expo.
+
 ```bash
 npm install
 ```
@@ -18,6 +26,18 @@ ou:
 
 ```bash
 npm run start
+```
+
+Si Expo reste bloqué après `Starting project at ...`, utilise le script Node 20:
+
+```bash
+npm run start:node20
+```
+
+Pour ouvrir sur iPhone avec Expo Go, utilise plutôt:
+
+```bash
+npm run start:tunnel
 ```
 
 ## Configuration
