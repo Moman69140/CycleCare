@@ -1,13 +1,57 @@
+import { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
+import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
+  const [session, setSession] = useState<any>(null);
+  const [mode, setMode] = useState<"signup" | "signin">("signup");
+  const [firstName, setFirstName] = useState("");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [status, setStatus] = useState("");
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
   const cycle = getCycleInfo({
     lastPeriodDate: "",
     cycleLength: 28,
     periodLength: 5,
   });
   const phase = cycle ? getPhaseContent(cycle.phase) : null;
+
+  useEffect(() => {
+    if (!isSupabaseConfigured) {
+      setStatus("Supabase doit etre configure pour activer l'inscription.");
+      return;
+    }
+
+    const auth = supabase.auth as any;
+    auth.getSession().then(({ data }: any) => setSession(data.session));
+    const { data } = auth.onAuthStateChange((_event: string, nextSession: any) => {
+      setSession(nextSession);
+    });
+
+    return () => data.subscription.unsubscribe();
+  }, []);
+
+  async function handleAuthSubmit() {
+    setIsSubmitting(true);
+    setStatus("");
+
+    const result =
+      mode === "signup"
+        ? await signUpWithEmail(email.trim(), password, firstName.trim())
+        : await signInWithEmail(email.trim(), password);
+
+    setStatus(result.message);
+    setIsSubmitting(false);
+  }
+
+  async function handleSignOut() {
+    const result = await signOut();
+    setStatus(result.message);
+  }
 
   return (
     <SafeAreaView style={styles.safeArea}>
@@ -18,6 +62,65 @@ export default function App() {
           <Text style={styles.subtitle}>
             Une app douce et privée pour suivre son cycle et choisir ce qui peut etre partage.
           </Text>
+        </View>
+
+        <View style={styles.formCard}>
+          <Text style={styles.cardLabel}>{session ? "Compte connecte" : "Acces securise"}</Text>
+          <Text style={styles.sectionTitle}>
+            {session ? "Bienvenue dans CycleCare" : mode === "signup" ? "Creer mon compte" : "Me connecter"}
+          </Text>
+          {session ? (
+            <>
+              <Text style={styles.body}>{session.user.email}</Text>
+              <TouchableOpacity style={styles.secondaryButton} onPress={handleSignOut}>
+                <Text style={styles.secondaryButtonText}>Me deconnecter</Text>
+              </TouchableOpacity>
+            </>
+          ) : (
+            <>
+              {mode === "signup" ? (
+                <TextInput
+                  style={styles.input}
+                  placeholder="Prenom"
+                  placeholderTextColor="#8b7d7c"
+                  value={firstName}
+                  onChangeText={setFirstName}
+                />
+              ) : null}
+              <TextInput
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+                placeholder="Adresse e-mail"
+                placeholderTextColor="#8b7d7c"
+                value={email}
+                onChangeText={setEmail}
+              />
+              <TextInput
+                secureTextEntry
+                style={styles.input}
+                placeholder="Mot de passe"
+                placeholderTextColor="#8b7d7c"
+                value={password}
+                onChangeText={setPassword}
+              />
+              <TouchableOpacity style={styles.primaryButton} onPress={handleAuthSubmit} disabled={isSubmitting}>
+                <Text style={styles.primaryButtonText}>{isSubmitting ? "Patiente..." : mode === "signup" ? "Creer mon compte" : "Me connecter"}</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.textButton}
+                onPress={() => {
+                  setMode(mode === "signup" ? "signin" : "signup");
+                  setStatus("");
+                }}
+              >
+                <Text style={styles.textButtonText}>
+                  {mode === "signup" ? "J'ai deja un compte" : "Creer un nouveau compte"}
+                </Text>
+              </TouchableOpacity>
+            </>
+          )}
+          {status ? <Text style={styles.statusText}>{status}</Text> : null}
         </View>
 
         <View style={styles.card}>
@@ -145,5 +248,34 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 16,
     fontWeight: "900",
+  },
+  secondaryButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+    borderColor: "rgba(91, 45, 58, 0.18)",
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  secondaryButtonText: {
+    color: "#5b2d3a",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  textButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 40,
+  },
+  textButtonText: {
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "800",
+  },
+  statusText: {
+    color: "#766d6c",
+    fontSize: 14,
+    lineHeight: 20,
   },
 });
