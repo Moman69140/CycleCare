@@ -44,14 +44,26 @@ In **Authentication > URL Configuration**:
 
 In **Project Settings > API**, copy:
 
-- Project URL
-- anon public key
+- API URL / Project URL
+- Publishable key
 
 Send only these two values to configure the mobile app:
 
 ```text
 EXPO_PUBLIC_SUPABASE_URL=
 EXPO_PUBLIC_SUPABASE_ANON_KEY=
+```
+
+Use only the base project URL in the mobile app. If Supabase shows:
+
+```text
+https://your-project.supabase.co/rest/v1/
+```
+
+then use:
+
+```text
+https://your-project.supabase.co
 ```
 
 Do not send the service role key in chat.
