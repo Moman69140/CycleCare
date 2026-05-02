@@ -14,8 +14,11 @@ In Supabase:
 
 1. Open **SQL Editor**.
 2. Create a new query.
-3. Paste the content of `backend/supabase/schema.sql`.
-4. Run the query.
+3. Paste and run `backend/supabase/manual-setup/01_tables.sql`.
+4. Create a second query.
+5. Paste and run `backend/supabase/manual-setup/02_functions.sql`.
+6. Create a third query.
+7. Paste and run `backend/supabase/manual-setup/03_security.sql`.
 
 Expected result:
 
