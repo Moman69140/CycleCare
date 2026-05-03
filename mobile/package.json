@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "start:node20": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/.bin/expo start --clear",
-    "start:tunnel": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/.bin/expo start --tunnel --clear",
+    "start:node20": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/expo/bin/cli start --clear",
+    "start:tunnel": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/expo/bin/cli start --tunnel --clear",
     "ios": "expo start --ios",
     "android": "expo start --android",
     "web": "expo start --web",
