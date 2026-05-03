@@ -20,6 +20,7 @@ export default function App() {
   const [lastPeriodDate, setLastPeriodDate] = useState("");
   const [cycleLength, setCycleLength] = useState("28");
   const [periodLength, setPeriodLength] = useState("5");
+  const [hasSavedCycle, setHasSavedCycle] = useState(false);
 
   const cycle = getCycleInfo({
     lastPeriodDate,
@@ -90,6 +91,7 @@ export default function App() {
       setLastPeriodDate(profile.lastPeriodDate);
       setCycleLength(String(profile.cycleLength));
       setPeriodLength(String(profile.periodLength));
+      setHasSavedCycle(Boolean(profile.lastPeriodDate));
     }
 
     hydrateCycleProfile();
@@ -132,6 +134,7 @@ export default function App() {
       periodLength: Number(periodLength),
     });
     setCycleStatus(result.message);
+    setHasSavedCycle(result.ok);
     setIsSavingCycle(false);
   }
 
@@ -208,10 +211,23 @@ export default function App() {
         <View style={styles.card}>
           <Text style={styles.cardLabel}>Phase actuelle</Text>
           <Text style={styles.phaseName}>{phase?.name ?? "A configurer"}</Text>
+          {cycle ? (
+            <View style={styles.phaseMetaRow}>
+              <Text style={styles.phasePill}>Jour {cycle.day}</Text>
+              <Text style={styles.phasePill}>{Math.round(cycle.progress * 100)}% du cycle</Text>
+            </View>
+          ) : null}
           <Text style={styles.body}>
             {phase?.description ??
               "Renseigne les informations du cycle pour obtenir une estimation indicative."}
           </Text>
+          {cycle && phase ? (
+            <View style={styles.insightBox}>
+              <Text style={styles.insightTitle}>A retenir aujourd'hui</Text>
+              <Text style={styles.body}>{phase.partnerAdvice}</Text>
+              <Text style={styles.mutedText}>Prochaines regles estimees : {formatDate(cycle.nextPeriodDate)}</Text>
+            </View>
+          ) : null}
         </View>
 
         <View style={styles.formCard}>
@@ -255,9 +271,37 @@ export default function App() {
           </TouchableOpacity>
           {cycleStatus ? <Text style={styles.statusText}>{cycleStatus}</Text> : null}
         </View>
+
+        {hasSavedCycle && cycle && phase ? (
+          <View style={styles.nextStepCard}>
+            <Text style={styles.cardLabel}>Etape 2</Text>
+            <Text style={styles.sectionTitle}>Choisir ce que je partage</Text>
+            <Text style={styles.body}>
+              Ton cycle est pret. La prochaine etape sera d'ajouter un destinataire et de choisir les moments du cycle
+              qui peuvent lui etre envoyes.
+            </Text>
+            <View style={styles.previewBox}>
+              <Text style={styles.previewLabel}>Apercu partage</Text>
+              <Text style={styles.previewText}>
+                {cycleFirstName || "Elle"} est en {phase.name.toLowerCase()}. {phase.partnerAdvice}
+              </Text>
+            </View>
+            <View style={styles.nextStepBadge}>
+              <Text style={styles.nextStepBadgeText}>Prochaine construction : destinataire</Text>
+            </View>
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
+}
+
+function formatDate(date: Date) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "long",
+    year: "numeric",
+  }).format(date);
 }
 
 const styles = StyleSheet.create({
@@ -308,6 +352,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     backgroundColor: "rgba(255, 255, 255, 0.9)",
   },
+  nextStepCard: {
+    gap: 14,
+    padding: 22,
+    borderColor: "rgba(76, 54, 60, 0.13)",
+    borderRadius: 24,
+    borderWidth: 1,
+    backgroundColor: "#fff7f0",
+  },
   cardLabel: {
     color: "#c85a75",
     fontSize: 12,
@@ -320,6 +372,21 @@ const styles = StyleSheet.create({
     fontSize: 34,
     fontWeight: "900",
   },
+  phaseMetaRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  phasePill: {
+    overflow: "hidden",
+    paddingHorizontal: 12,
+    paddingVertical: 8,
+    borderRadius: 999,
+    backgroundColor: "#f6e8ec",
+    color: "#5b2d3a",
+    fontSize: 13,
+    fontWeight: "800",
+  },
   sectionTitle: {
     color: "#5b2d3a",
     fontSize: 24,
@@ -329,6 +396,54 @@ const styles = StyleSheet.create({
     color: "#766d6c",
     fontSize: 16,
     lineHeight: 24,
+  },
+  insightBox: {
+    gap: 8,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: "#fff7f0",
+  },
+  insightTitle: {
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  mutedText: {
+    color: "#8b7d7c",
+    fontSize: 13,
+    lineHeight: 19,
+  },
+  previewBox: {
+    gap: 6,
+    padding: 16,
+    borderColor: "rgba(91, 45, 58, 0.12)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  previewLabel: {
+    color: "#c85a75",
+    fontSize: 12,
+    fontWeight: "900",
+    textTransform: "uppercase",
+  },
+  previewText: {
+    color: "#5b2d3a",
+    fontSize: 16,
+    fontWeight: "700",
+    lineHeight: 23,
+  },
+  nextStepBadge: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 44,
+    borderRadius: 999,
+    backgroundColor: "#5b2d3a",
+  },
+  nextStepBadgeText: {
+    color: "#fff",
+    fontSize: 14,
+    fontWeight: "900",
   },
   input: {
     minHeight: 52,
