@@ -1,7 +1,9 @@
 import { useEffect, useState } from "react";
 import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity, View } from "react-native";
+import * as Linking from "expo-linking";
 import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
+import { loadCycleProfile, saveCycleProfile } from "./src/lib/cycleProfile";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
@@ -11,12 +13,18 @@ export default function App() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [status, setStatus] = useState("");
+  const [cycleStatus, setCycleStatus] = useState("");
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [isSavingCycle, setIsSavingCycle] = useState(false);
+  const [cycleFirstName, setCycleFirstName] = useState("");
+  const [lastPeriodDate, setLastPeriodDate] = useState("");
+  const [cycleLength, setCycleLength] = useState("28");
+  const [periodLength, setPeriodLength] = useState("5");
 
   const cycle = getCycleInfo({
-    lastPeriodDate: "",
-    cycleLength: 28,
-    periodLength: 5,
+    lastPeriodDate,
+    cycleLength: Number(cycleLength) || 28,
+    periodLength: Number(periodLength) || 5,
   });
   const phase = cycle ? getPhaseContent(cycle.phase) : null;
 
@@ -35,6 +43,62 @@ export default function App() {
     return () => data.subscription.unsubscribe();
   }, []);
 
+  useEffect(() => {
+    if (!isSupabaseConfigured) return;
+
+    async function handleAuthUrl(url: string | null) {
+      if (!url) return;
+
+      const [, fragment = ""] = url.split("#");
+      const query = url.includes("?") ? url.split("?")[1].split("#")[0] : "";
+      const params = new URLSearchParams(fragment || query);
+      const accessToken = params.get("access_token");
+      const refreshToken = params.get("refresh_token");
+
+      if (!accessToken || !refreshToken) return;
+
+      const auth = supabase.auth as any;
+      const { data, error } = await auth.setSession({
+        access_token: accessToken,
+        refresh_token: refreshToken,
+      });
+
+      if (error) {
+        setStatus(error.message);
+        return;
+      }
+
+      setSession(data.session);
+      setStatus("E-mail confirme. Ton compte est connecte.");
+    }
+
+    Linking.getInitialURL().then(handleAuthUrl);
+    const subscription = Linking.addEventListener("url", ({ url }) => handleAuthUrl(url));
+
+    return () => subscription.remove();
+  }, []);
+
+  useEffect(() => {
+    let isMounted = true;
+
+    async function hydrateCycleProfile() {
+      if (!session?.user?.id) return;
+      const profile = await loadCycleProfile(session.user.id);
+      if (!isMounted || !profile) return;
+
+      setCycleFirstName(profile.firstName);
+      setLastPeriodDate(profile.lastPeriodDate);
+      setCycleLength(String(profile.cycleLength));
+      setPeriodLength(String(profile.periodLength));
+    }
+
+    hydrateCycleProfile();
+
+    return () => {
+      isMounted = false;
+    };
+  }, [session?.user?.id]);
+
   async function handleAuthSubmit() {
     setIsSubmitting(true);
     setStatus("");
@@ -51,6 +115,24 @@ export default function App() {
   async function handleSignOut() {
     const result = await signOut();
     setStatus(result.message);
+  }
+
+  async function handleSaveCycle() {
+    if (!session?.user?.id) {
+      setCycleStatus("Connecte-toi pour enregistrer ton cycle.");
+      return;
+    }
+
+    setIsSavingCycle(true);
+    setCycleStatus("");
+    const result = await saveCycleProfile(session.user.id, {
+      firstName: cycleFirstName,
+      lastPeriodDate: lastPeriodDate.trim(),
+      cycleLength: Number(cycleLength),
+      periodLength: Number(periodLength),
+    });
+    setCycleStatus(result.message);
+    setIsSavingCycle(false);
   }
 
   return (
@@ -135,15 +217,43 @@ export default function App() {
         <View style={styles.formCard}>
           <Text style={styles.cardLabel}>Etape 1</Text>
           <Text style={styles.sectionTitle}>Mon cycle, mes reperes</Text>
-          <TextInput style={styles.input} placeholder="Prenom" placeholderTextColor="#8b7d7c" />
-          <TextInput style={styles.input} placeholder="Premier jour des dernieres regles" placeholderTextColor="#8b7d7c" />
+          <TextInput
+            style={styles.input}
+            placeholder="Prenom"
+            placeholderTextColor="#8b7d7c"
+            value={cycleFirstName}
+            onChangeText={setCycleFirstName}
+          />
+          <TextInput
+            autoCapitalize="none"
+            style={styles.input}
+            placeholder="Premier jour des dernieres regles (AAAA-MM-JJ)"
+            placeholderTextColor="#8b7d7c"
+            value={lastPeriodDate}
+            onChangeText={setLastPeriodDate}
+          />
           <View style={styles.row}>
-            <TextInput style={[styles.input, styles.rowInput]} placeholder="Cycle" placeholderTextColor="#8b7d7c" keyboardType="number-pad" />
-            <TextInput style={[styles.input, styles.rowInput]} placeholder="Regles" placeholderTextColor="#8b7d7c" keyboardType="number-pad" />
+            <TextInput
+              style={[styles.input, styles.rowInput]}
+              placeholder="Cycle"
+              placeholderTextColor="#8b7d7c"
+              keyboardType="number-pad"
+              value={cycleLength}
+              onChangeText={setCycleLength}
+            />
+            <TextInput
+              style={[styles.input, styles.rowInput]}
+              placeholder="Regles"
+              placeholderTextColor="#8b7d7c"
+              keyboardType="number-pad"
+              value={periodLength}
+              onChangeText={setPeriodLength}
+            />
           </View>
-          <TouchableOpacity style={styles.primaryButton}>
-            <Text style={styles.primaryButtonText}>Mettre a jour</Text>
+          <TouchableOpacity style={styles.primaryButton} onPress={handleSaveCycle} disabled={isSavingCycle}>
+            <Text style={styles.primaryButtonText}>{isSavingCycle ? "Enregistrement..." : "Mettre a jour"}</Text>
           </TouchableOpacity>
+          {cycleStatus ? <Text style={styles.statusText}>{cycleStatus}</Text> : null}
         </View>
       </ScrollView>
     </SafeAreaView>

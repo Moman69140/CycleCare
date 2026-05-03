@@ -47,6 +47,12 @@ Créer un projet Supabase, puis renseigner dans `app.json` ou via variables d’
 - `supabaseUrl`
 - `supabaseAnonKey`
 
+Dans Supabase, configure aussi les URL d’authentification:
+
+- Authentication > URL Configuration > Site URL: `https://cyclecare-fr.netlify.app`
+- Redirect URLs: ajoute l’URL Expo affichée dans le terminal avec `/--/auth/callback`, par exemple `exp://192.168.1.13:8081/--/auth/callback`
+- Pour la future app installée: ajoute `cyclecare://auth/callback`
+
 ## Notes MVP
 
 - L’app mobile reprend le positionnement premium du prototype web.

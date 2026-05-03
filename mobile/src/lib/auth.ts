@@ -1,4 +1,5 @@
 import { isSupabaseConfigured, supabase } from "./supabase";
+import * as Linking from "expo-linking";
 
 export type AuthResult = {
   ok: boolean;
@@ -15,6 +16,7 @@ export async function signUpWithEmail(email: string, password: string, firstName
     email,
     password,
     options: {
+      emailRedirectTo: Linking.createURL("auth/callback"),
       data: {
         first_name: firstName,
       },
