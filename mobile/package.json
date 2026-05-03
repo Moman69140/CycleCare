@@ -8,8 +8,8 @@
   },
   "scripts": {
     "start": "expo start",
-    "start:node20": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/@expo/cli/build/bin/cli start --clear",
-    "start:tunnel": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/@expo/cli/build/bin/cli start --tunnel --clear",
+    "start:node20": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/.bin/expo start --clear",
+    "start:tunnel": "PATH=\"/opt/homebrew/opt/node@20/bin:$PATH\" node node_modules/.bin/expo start --tunnel --clear",
     "ios": "expo start --ios",
     "android": "expo start --android",
     "web": "expo start --web",
@@ -17,17 +17,17 @@
     "typecheck": "tsc --noEmit"
   },
   "dependencies": {
-    "@react-native-async-storage/async-storage": "^2.1.2",
+    "@react-native-async-storage/async-storage": "^2.2.0",
     "@supabase/supabase-js": "^2.49.0",
-    "expo": "^53.0.0",
-    "expo-constants": "^17.0.0",
-    "expo-secure-store": "^14.0.0",
-    "react": "^19.0.0",
-    "react-native": "^0.79.6",
+    "expo": "~54.0.0",
+    "expo-constants": "~18.0.13",
+    "expo-secure-store": "~15.0.8",
+    "react": "^19.1.0",
+    "react-native": "^0.81.5",
     "react-native-url-polyfill": "^2.0.0"
   },
   "devDependencies": {
-    "@types/react": "~19.0.10",
-    "typescript": "~5.8.3"
+    "@types/react": "~19.1.10",
+    "typescript": "~5.9.2"
   }
 }
