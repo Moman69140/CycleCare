@@ -20,8 +20,10 @@ Responsabilités:
 
 - vérifier l’utilisateur connecté;
 - vérifier le consentement du destinataire;
+- vérifier le quota mensuel gratuit ou Couple+;
 - envoyer via Resend et/ou Twilio;
 - marquer l’événement `sent` ou `failed`;
+- incrémenter le compteur mensuel après chaque envoi réussi;
 - retourner le statut.
 
 Variables nécessaires:
@@ -40,11 +42,14 @@ App mobile:
 - `Envoyer maintenant` appelle cette fonction avec les `eventIds`.
 - Si les secrets Resend/Twilio ne sont pas encore configures, l'app garde le brouillon et affiche un message de configuration.
 
+Quotas actuels:
+
+- Gratuit: 3 envois mensuels.
+- Couple+: 30 envois mensuels.
+
 À ajouter ensuite:
 
-- vérifier le quota gratuit ou Couple+;
 - générer un token de réponse si réponse autorisée;
-- incrémenter le quota mensuel;
 
 ## inbound-partner-reply
 

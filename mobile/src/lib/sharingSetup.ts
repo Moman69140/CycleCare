@@ -164,6 +164,14 @@ export async function sendPreparedNotifications(eventIds: string[]): Promise<Sha
   }
 
   const results = Array.isArray(data?.results) ? data.results : [];
+  const quotaExceeded = results.some((result: { reason?: string }) => result.reason === "quota exceeded");
+  if (quotaExceeded) {
+    return {
+      ok: false,
+      message: "Quota gratuit atteint. Couple+ permettra de partager plus de reperes pendant le cycle.",
+    };
+  }
+
   const hasFailure = results.some((result: { ok?: boolean }) => !result.ok);
 
   if (hasFailure) {

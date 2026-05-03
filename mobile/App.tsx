@@ -13,6 +13,8 @@ import {
   sendPreparedNotifications,
 } from "./src/lib/sharingSetup";
 import type { NotificationSummary, PartnerSummary } from "./src/lib/sharingSetup";
+import { loadSubscriptionOverview } from "./src/lib/subscription";
+import type { SubscriptionOverview } from "./src/lib/subscription";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
@@ -44,6 +46,8 @@ export default function App() {
   const [partners, setPartners] = useState<PartnerSummary[]>([]);
   const [notifications, setNotifications] = useState<NotificationSummary[]>([]);
   const [sharingControlStatus, setSharingControlStatus] = useState("");
+  const [subscriptionOverview, setSubscriptionOverview] = useState<SubscriptionOverview | null>(null);
+  const [subscriptionStatus, setSubscriptionStatus] = useState("");
 
   const cycle = getCycleInfo({
     lastPeriodDate,
@@ -128,6 +132,7 @@ export default function App() {
 
   useEffect(() => {
     refreshSharingOverview();
+    refreshSubscriptionOverview();
   }, [session?.user?.id]);
 
   async function refreshSharingOverview() {
@@ -140,6 +145,16 @@ export default function App() {
     const overview = await loadSharingOverview(session.user.id);
     setPartners(overview.partners);
     setNotifications(overview.notifications);
+  }
+
+  async function refreshSubscriptionOverview() {
+    if (!session?.user?.id) {
+      setSubscriptionOverview(null);
+      return;
+    }
+
+    const overview = await loadSubscriptionOverview(session.user.id);
+    setSubscriptionOverview(overview);
   }
 
   async function handleAuthSubmit() {
@@ -215,7 +230,14 @@ export default function App() {
       setPreparedEventIds([]);
     }
     await refreshSharingOverview();
+    await refreshSubscriptionOverview();
     setIsSendingShare(false);
+  }
+
+  function handleStartCouplePlus() {
+    setSubscriptionStatus(
+      "Couple+ sera active via l'achat integre Apple. La validation StoreKit sera ajoutee avant TestFlight.",
+    );
   }
 
   async function handleDisablePartner(partnerId: string) {
@@ -327,6 +349,56 @@ export default function App() {
             </View>
           ) : null}
         </View>
+
+        {session && subscriptionOverview ? (
+          <View style={styles.formCard}>
+            <Text style={styles.cardLabel}>Couple+</Text>
+            <Text style={styles.sectionTitle}>
+              {subscriptionOverview.isCouplePlus ? "Partage etendu actif" : "Partager plus souvent"}
+            </Text>
+            <Text style={styles.body}>
+              Le plan gratuit permet quelques envois par mois. Couple+ est pense pour partager des reperes pendant tout
+              le cycle, via l'achat integre Apple.
+            </Text>
+            <View style={styles.quotaBox}>
+              <View style={styles.quotaTopLine}>
+                <Text style={styles.quotaTitle}>Envois ce mois-ci</Text>
+                <Text style={styles.quotaCount}>
+                  {subscriptionOverview.sendCount}/{subscriptionOverview.sendLimit}
+                </Text>
+              </View>
+              <View style={styles.quotaTrack}>
+                <View
+                  style={[
+                    styles.quotaFill,
+                    {
+                      width: `${Math.min(
+                        100,
+                        Math.round((subscriptionOverview.sendCount / subscriptionOverview.sendLimit) * 100),
+                      )}%`,
+                    },
+                  ]}
+                />
+              </View>
+            </View>
+            <View style={styles.planComparison}>
+              <View style={styles.planLine}>
+                <Text style={styles.planName}>Gratuit</Text>
+                <Text style={styles.planDetail}>3 envois mensuels</Text>
+              </View>
+              <View style={styles.planLine}>
+                <Text style={styles.planName}>Couple+</Text>
+                <Text style={styles.planDetail}>30 envois mensuels</Text>
+              </View>
+            </View>
+            {!subscriptionOverview.isCouplePlus ? (
+              <TouchableOpacity style={styles.primaryButton} onPress={handleStartCouplePlus}>
+                <Text style={styles.primaryButtonText}>Activer Couple+</Text>
+              </TouchableOpacity>
+            ) : null}
+            {subscriptionStatus ? <Text style={styles.statusText}>{subscriptionStatus}</Text> : null}
+          </View>
+        ) : null}
 
         <View style={styles.formCard}>
           <Text style={styles.cardLabel}>Etape 1</Text>
@@ -768,6 +840,60 @@ const styles = StyleSheet.create({
     color: "#766d6c",
     fontSize: 16,
     lineHeight: 24,
+  },
+  quotaBox: {
+    gap: 10,
+    padding: 16,
+    borderRadius: 18,
+    backgroundColor: "#fff7f0",
+  },
+  quotaTopLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  quotaTitle: {
+    flex: 1,
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  quotaCount: {
+    color: "#c85a75",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  quotaTrack: {
+    overflow: "hidden",
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "rgba(91, 45, 58, 0.12)",
+  },
+  quotaFill: {
+    height: 10,
+    borderRadius: 999,
+    backgroundColor: "#c85a75",
+  },
+  planComparison: {
+    gap: 8,
+  },
+  planLine: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+    paddingVertical: 4,
+  },
+  planName: {
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  planDetail: {
+    color: "#766d6c",
+    fontSize: 14,
+    fontWeight: "700",
   },
   insightBox: {
     gap: 8,

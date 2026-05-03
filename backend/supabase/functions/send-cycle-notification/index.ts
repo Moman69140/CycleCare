@@ -15,6 +15,9 @@ type NotificationEvent = {
   };
 };
 
+const FREE_SEND_LIMIT = 3;
+const COUPLE_PLUS_SEND_LIMIT = 30;
+
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
   "Access-Control-Allow-Headers": "authorization, x-client-info, apikey, content-type",
@@ -61,8 +64,25 @@ Deno.serve(async (request) => {
       continue;
     }
 
+    const quota = await getQuotaState(supabaseUrl, serviceRoleKey, event.user_id);
+    if (quota.sendCount >= quota.sendLimit) {
+      await markNotification(supabaseUrl, serviceRoleKey, event.id, "failed");
+      results.push({
+        id: event.id,
+        channel: event.channel,
+        ok: false,
+        reason: "quota exceeded",
+        sendCount: quota.sendCount,
+        sendLimit: quota.sendLimit,
+      });
+      continue;
+    }
+
     const result = event.channel === "email" ? await sendEmail(event) : await sendSms(event);
     await markNotification(supabaseUrl, serviceRoleKey, event.id, result.ok ? "sent" : "failed");
+    if (result.ok) {
+      await setMonthlySendCount(supabaseUrl, serviceRoleKey, event.user_id, quota.sendCount + 1);
+    }
     results.push({ id: event.id, channel: event.channel, ...result });
   }
 
@@ -107,6 +127,54 @@ async function getNotificationEvents(
   return response.json();
 }
 
+async function getQuotaState(supabaseUrl: string, serviceRoleKey: string, userId: string) {
+  const monthKey = getMonthKey();
+  const [subscriptionResponse, quotaResponse] = await Promise.all([
+    fetch(`${supabaseUrl}/rest/v1/subscriptions?user_id=eq.${userId}&select=tier,active_until`, {
+      headers: serviceHeaders(serviceRoleKey),
+    }),
+    fetch(
+      `${supabaseUrl}/rest/v1/monthly_send_quotas?user_id=eq.${userId}&month_key=eq.${monthKey}&select=send_count`,
+      { headers: serviceHeaders(serviceRoleKey) },
+    ),
+  ]);
+
+  const subscriptions = subscriptionResponse.ok ? await subscriptionResponse.json() : [];
+  const quotas = quotaResponse.ok ? await quotaResponse.json() : [];
+  const subscription = subscriptions[0];
+  const hasCouplePlus =
+    subscription?.tier === "couple_plus" &&
+    (!subscription.active_until || new Date(subscription.active_until).getTime() > Date.now());
+
+  return {
+    monthKey,
+    sendCount: Number(quotas[0]?.send_count ?? 0),
+    sendLimit: hasCouplePlus ? COUPLE_PLUS_SEND_LIMIT : FREE_SEND_LIMIT,
+  };
+}
+
+async function setMonthlySendCount(
+  supabaseUrl: string,
+  serviceRoleKey: string,
+  userId: string,
+  sendCount: number,
+) {
+  await fetch(`${supabaseUrl}/rest/v1/monthly_send_quotas?on_conflict=user_id,month_key`, {
+    method: "POST",
+    headers: {
+      ...serviceHeaders(serviceRoleKey),
+      "content-type": "application/json",
+      Prefer: "resolution=merge-duplicates,return=minimal",
+    },
+    body: JSON.stringify({
+      user_id: userId,
+      month_key: getMonthKey(),
+      send_count: sendCount,
+      updated_at: new Date().toISOString(),
+    }),
+  });
+}
+
 async function sendEmail(event: NotificationEvent) {
   const apiKey = Deno.env.get("RESEND_API_KEY");
   const from = Deno.env.get("RESEND_FROM_EMAIL");
@@ -131,6 +199,17 @@ async function sendEmail(event: NotificationEvent) {
 
   if (!response.ok) return { ok: false, reason: await response.text() };
   return { ok: true };
+}
+
+function serviceHeaders(serviceRoleKey: string) {
+  return {
+    apikey: serviceRoleKey,
+    authorization: `Bearer ${serviceRoleKey}`,
+  };
+}
+
+function getMonthKey() {
+  return new Date().toISOString().slice(0, 7);
 }
 
 async function sendSms(event: NotificationEvent) {
