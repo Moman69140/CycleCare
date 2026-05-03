@@ -26,10 +26,14 @@ Cette checklist prépare le prototype à une future soumission Apple App Store. 
 - Brancher SMS/e-mail via un service conforme, avec logs minimisés et consentement révocable.
 - Implémenter Couple+ avec StoreKit, pas avec un paiement externe dans l’app iOS.
 - Décrire clairement la limite gratuite et les bénéfices Couple+ avant l’achat intégré.
+- Couple+ doit rester validé côté serveur: gratuit 3 envois/mois, Couple+ 30 envois/mois.
+- Les notifications Apple StoreKit doivent mettre à jour `subscriptions`; l’app cliente ne doit jamais activer Couple+ seule.
 - Garder la réponse partenaire optionnelle, limitée à un message court par notification, avec blocage, signalement et désactivation immédiate.
 - Documenter dans la politique de confidentialité les réponses entrantes, leur durée de conservation et leur suppression.
 - Préparer un compte de démo ou un mode démo complet pour App Review.
 - Faire tester sur appareils iOS réels avant soumission.
+- Préparer un build TestFlight via EAS avec `com.cyclecare.app` ou le bundle identifier final.
+- Ajouter les notes App Review: données de cycle indicatives, partage uniquement avec consentement, suppression/désactivation disponible.
 
 ## Références Apple utiles
 

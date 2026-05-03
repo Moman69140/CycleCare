@@ -40,6 +40,8 @@ Pour ouvrir sur iPhone avec Expo Go, utilise plutôt:
 npm run start:tunnel
 ```
 
+Si Expo Go bloque encore, passer par TestFlight/EAS sera plus stable que de forcer le terminal local.
+
 ## Configuration
 
 Créer un projet Supabase, puis renseigner dans `app.json` ou via variables d’environnement Expo:
@@ -59,3 +61,41 @@ Dans Supabase, configure aussi les URL d’authentification:
 - Les données de cycle restent indicatives.
 - Le partage vers partenaire doit passer par le backend.
 - Couple+ doit être validé côté serveur après achat StoreKit.
+
+## TestFlight / EAS
+
+Installer EAS CLI:
+
+```bash
+npm install -g eas-cli
+```
+
+Se connecter:
+
+```bash
+eas login
+```
+
+Configurer le projet Expo:
+
+```bash
+eas init
+```
+
+Créer un build interne iOS:
+
+```bash
+eas build --platform ios --profile preview
+```
+
+Créer un build App Store:
+
+```bash
+eas build --platform ios --profile production
+```
+
+Soumettre à App Store Connect:
+
+```bash
+eas submit --platform ios --profile production
+```

@@ -6,12 +6,16 @@
     "version": "0.1.0",
     "orientation": "portrait",
     "userInterfaceStyle": "light",
+    "privacy": "unlisted",
+    "owner": "moman69140",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cyclecare.app",
+      "buildNumber": "1",
       "infoPlist": {
-        "NSHealthShareUsageDescription": "CycleCare ne lit pas les données Santé sans consentement explicite.",
-        "NSHealthUpdateUsageDescription": "CycleCare ne modifie pas les données Santé sans consentement explicite."
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSHealthShareUsageDescription": "CycleCare ne lit pas les donnees Sante sans consentement explicite.",
+        "NSHealthUpdateUsageDescription": "CycleCare ne modifie pas les donnees Sante sans consentement explicite."
       }
     },
     "android": {
