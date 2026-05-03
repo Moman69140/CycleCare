@@ -18,6 +18,33 @@ export type SharingSetupResult = {
   eventIds?: string[];
 };
 
+export type PartnerSummary = {
+  id: string;
+  displayName: string;
+  email: string | null;
+  phone: string | null;
+  emailEnabled: boolean;
+  smsEnabled: boolean;
+  sharingConsent: boolean;
+  createdAt: string;
+};
+
+export type NotificationSummary = {
+  id: string;
+  partnerId: string;
+  partnerName: string;
+  channel: "email" | "sms";
+  status: "draft" | "sent" | "failed";
+  messagePreview: string;
+  createdAt: string;
+  sentAt: string | null;
+};
+
+export type SharingOverview = {
+  partners: PartnerSummary[];
+  notifications: NotificationSummary[];
+};
+
 export async function saveSharingSetup(input: SharingSetupInput): Promise<SharingSetupResult> {
   if (!isSupabaseConfigured) {
     return { ok: false, message: "Supabase n'est pas encore configure dans l'app mobile." };
@@ -147,4 +174,105 @@ export async function sendPreparedNotifications(eventIds: string[]): Promise<Sha
   }
 
   return { ok: true, message: "Message envoye au destinataire." };
+}
+
+export async function loadSharingOverview(userId: string): Promise<SharingOverview> {
+  if (!isSupabaseConfigured) {
+    return { partners: [], notifications: [] };
+  }
+
+  const client = supabase as any;
+  const [{ data: partners }, { data: notifications }] = await Promise.all([
+    client
+      .from("partners")
+      .select("id, display_name, email, phone, email_enabled, sms_enabled, sharing_consent, created_at")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false }),
+    client
+      .from("notification_events")
+      .select("id, partner_id, channel, status, message_preview, created_at, sent_at, partners(display_name)")
+      .eq("user_id", userId)
+      .order("created_at", { ascending: false })
+      .limit(8),
+  ]);
+
+  return {
+    partners: (partners ?? []).map((partner: any) => ({
+      id: partner.id,
+      displayName: partner.display_name,
+      email: partner.email,
+      phone: partner.phone,
+      emailEnabled: partner.email_enabled,
+      smsEnabled: partner.sms_enabled,
+      sharingConsent: partner.sharing_consent,
+      createdAt: partner.created_at,
+    })),
+    notifications: (notifications ?? []).map((event: any) => ({
+      id: event.id,
+      partnerId: event.partner_id,
+      partnerName: event.partners?.display_name ?? "Destinataire",
+      channel: event.channel,
+      status: event.status,
+      messagePreview: event.message_preview,
+      createdAt: event.created_at,
+      sentAt: event.sent_at,
+    })),
+  };
+}
+
+export async function disablePartnerSharing(partnerId: string): Promise<SharingSetupResult> {
+  if (!isSupabaseConfigured) {
+    return { ok: false, message: "Supabase n'est pas encore configure dans l'app mobile." };
+  }
+
+  const client = supabase as any;
+  const { data: partner } = await client.from("partners").select("user_id").eq("id", partnerId).maybeSingle();
+  const { error } = await client
+    .from("partners")
+    .update({
+      email_enabled: false,
+      sms_enabled: false,
+      sharing_consent: false,
+    })
+    .eq("id", partnerId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  if (partner?.user_id) {
+    await client.from("consent_events").insert({
+      user_id: partner.user_id,
+      partner_id: partnerId,
+      event_type: "sharing_disabled",
+      details: {},
+    });
+  }
+
+  return { ok: true, message: "Partage desactive pour ce destinataire." };
+}
+
+export async function deletePartner(partnerId: string): Promise<SharingSetupResult> {
+  if (!isSupabaseConfigured) {
+    return { ok: false, message: "Supabase n'est pas encore configure dans l'app mobile." };
+  }
+
+  const client = supabase as any;
+  const { data: partner } = await client.from("partners").select("user_id").eq("id", partnerId).maybeSingle();
+  if (partner?.user_id) {
+    await client.from("consent_events").insert({
+      user_id: partner.user_id,
+      partner_id: partnerId,
+      event_type: "partner_deleted",
+      details: {},
+    });
+  }
+
+  const { error } = await client.from("partners").delete().eq("id", partnerId);
+
+  if (error) {
+    return { ok: false, message: error.message };
+  }
+
+  return { ok: true, message: "Destinataire supprime." };
 }

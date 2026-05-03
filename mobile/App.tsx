@@ -5,7 +5,14 @@ import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
 import type { CyclePhase } from "./src/lib/cycle";
 import { loadCycleProfile, saveCycleProfile } from "./src/lib/cycleProfile";
-import { saveSharingSetup, sendPreparedNotifications } from "./src/lib/sharingSetup";
+import {
+  deletePartner,
+  disablePartnerSharing,
+  loadSharingOverview,
+  saveSharingSetup,
+  sendPreparedNotifications,
+} from "./src/lib/sharingSetup";
+import type { NotificationSummary, PartnerSummary } from "./src/lib/sharingSetup";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
@@ -34,6 +41,9 @@ export default function App() {
   const [isSavingShare, setIsSavingShare] = useState(false);
   const [preparedEventIds, setPreparedEventIds] = useState<string[]>([]);
   const [isSendingShare, setIsSendingShare] = useState(false);
+  const [partners, setPartners] = useState<PartnerSummary[]>([]);
+  const [notifications, setNotifications] = useState<NotificationSummary[]>([]);
+  const [sharingControlStatus, setSharingControlStatus] = useState("");
 
   const cycle = getCycleInfo({
     lastPeriodDate,
@@ -116,6 +126,22 @@ export default function App() {
     };
   }, [session?.user?.id]);
 
+  useEffect(() => {
+    refreshSharingOverview();
+  }, [session?.user?.id]);
+
+  async function refreshSharingOverview() {
+    if (!session?.user?.id) {
+      setPartners([]);
+      setNotifications([]);
+      return;
+    }
+
+    const overview = await loadSharingOverview(session.user.id);
+    setPartners(overview.partners);
+    setNotifications(overview.notifications);
+  }
+
   async function handleAuthSubmit() {
     setIsSubmitting(true);
     setStatus("");
@@ -174,6 +200,9 @@ export default function App() {
     });
     setShareStatus(result.message);
     setPreparedEventIds(result.ok ? result.eventIds ?? [] : []);
+    if (result.ok) {
+      await refreshSharingOverview();
+    }
     setIsSavingShare(false);
   }
 
@@ -185,7 +214,26 @@ export default function App() {
     if (result.ok) {
       setPreparedEventIds([]);
     }
+    await refreshSharingOverview();
     setIsSendingShare(false);
+  }
+
+  async function handleDisablePartner(partnerId: string) {
+    setSharingControlStatus("");
+    const result = await disablePartnerSharing(partnerId);
+    setSharingControlStatus(result.message);
+    if (result.ok) {
+      await refreshSharingOverview();
+    }
+  }
+
+  async function handleDeletePartner(partnerId: string) {
+    setSharingControlStatus("");
+    const result = await deletePartner(partnerId);
+    setSharingControlStatus(result.message);
+    if (result.ok) {
+      await refreshSharingOverview();
+    }
   }
 
   return (
@@ -427,6 +475,76 @@ export default function App() {
             </View>
           </View>
         ) : null}
+
+        {session ? (
+          <View style={styles.formCard}>
+            <Text style={styles.cardLabel}>Controle</Text>
+            <Text style={styles.sectionTitle}>Mes partages</Text>
+            <Text style={styles.body}>
+              Tu peux suivre les messages prepares ou envoyes, puis couper le partage a tout moment.
+            </Text>
+
+            {partners.length > 0 ? (
+              partners.map((partner) => (
+                <View key={partner.id} style={styles.partnerCard}>
+                  <View style={styles.partnerHeader}>
+                    <View style={styles.partnerTitleBlock}>
+                      <Text style={styles.partnerName}>{partner.displayName}</Text>
+                      <Text style={styles.mutedText}>{formatPartnerContact(partner)}</Text>
+                    </View>
+                    <Text style={[styles.statusPill, partner.sharingConsent ? styles.statusPillActive : styles.statusPillMuted]}>
+                      {partner.sharingConsent ? "Actif" : "Pause"}
+                    </Text>
+                  </View>
+                  <View style={styles.channelSummaryRow}>
+                    <Text style={styles.channelSummary}>{partner.emailEnabled ? "E-mail actif" : "E-mail off"}</Text>
+                    <Text style={styles.channelSummary}>{partner.smsEnabled ? "SMS actif" : "SMS off"}</Text>
+                  </View>
+                  <View style={styles.partnerActions}>
+                    <TouchableOpacity style={styles.smallActionButton} onPress={() => handleDisablePartner(partner.id)}>
+                      <Text style={styles.smallActionText}>Desactiver</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.smallDangerButton} onPress={() => handleDeletePartner(partner.id)}>
+                      <Text style={styles.smallDangerText}>Supprimer</Text>
+                    </TouchableOpacity>
+                  </View>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>Aucun destinataire actif</Text>
+                <Text style={styles.mutedText}>Ajoute un destinataire dans l'etape 2 quand tu veux partager un repere.</Text>
+              </View>
+            )}
+
+            {sharingControlStatus ? <Text style={styles.statusText}>{sharingControlStatus}</Text> : null}
+
+            <View style={styles.formDivider} />
+
+            <Text style={styles.insightTitle}>Derniers messages</Text>
+            {notifications.length > 0 ? (
+              notifications.map((event) => (
+                <View key={event.id} style={styles.notificationRow}>
+                  <View style={styles.notificationTopLine}>
+                    <Text style={styles.notificationTitle}>{event.partnerName}</Text>
+                    <Text style={[styles.statusPill, getNotificationStatusStyle(event.status)]}>
+                      {formatNotificationStatus(event.status)}
+                    </Text>
+                  </View>
+                  <Text style={styles.mutedText}>
+                    {event.channel === "email" ? "E-mail" : "SMS"} - {formatDateTime(event.sentAt ?? event.createdAt)}
+                  </Text>
+                  <Text style={styles.notificationPreview}>{event.messagePreview}</Text>
+                </View>
+              ))
+            ) : (
+              <View style={styles.emptyState}>
+                <Text style={styles.emptyTitle}>Aucun message prepare</Text>
+                <Text style={styles.mutedText}>Les brouillons et envois apparaitront ici.</Text>
+              </View>
+            )}
+          </View>
+        ) : null}
       </ScrollView>
     </SafeAreaView>
   );
@@ -438,6 +556,32 @@ function formatDate(date: Date) {
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+function formatDateTime(value: string) {
+  return new Intl.DateTimeFormat("fr-FR", {
+    day: "2-digit",
+    month: "short",
+    hour: "2-digit",
+    minute: "2-digit",
+  }).format(new Date(value));
+}
+
+function formatPartnerContact(partner: PartnerSummary) {
+  const contacts = [partner.email, partner.phone].filter(Boolean);
+  return contacts.length > 0 ? contacts.join(" - ") : "Coordonnees non renseignees";
+}
+
+function formatNotificationStatus(status: NotificationSummary["status"]) {
+  if (status === "sent") return "Envoye";
+  if (status === "failed") return "Echec";
+  return "Brouillon";
+}
+
+function getNotificationStatusStyle(status: NotificationSummary["status"]) {
+  if (status === "sent") return styles.statusPillActive;
+  if (status === "failed") return styles.statusPillDanger;
+  return styles.statusPillMuted;
 }
 
 function getShareOptions(firstName: string, phase: CyclePhase, cycleDay: number) {
@@ -660,6 +804,136 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     lineHeight: 23,
+  },
+  partnerCard: {
+    gap: 12,
+    padding: 16,
+    borderColor: "rgba(91, 45, 58, 0.12)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  partnerHeader: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  partnerTitleBlock: {
+    flex: 1,
+    gap: 4,
+  },
+  partnerName: {
+    color: "#5b2d3a",
+    fontSize: 17,
+    fontWeight: "900",
+  },
+  statusPill: {
+    overflow: "hidden",
+    paddingHorizontal: 10,
+    paddingVertical: 6,
+    borderRadius: 999,
+    fontSize: 12,
+    fontWeight: "900",
+  },
+  statusPillActive: {
+    backgroundColor: "#e5f3ec",
+    color: "#246347",
+  },
+  statusPillMuted: {
+    backgroundColor: "#f1ece9",
+    color: "#766d6c",
+  },
+  statusPillDanger: {
+    backgroundColor: "#fde8e4",
+    color: "#9a3d31",
+  },
+  channelSummaryRow: {
+    flexDirection: "row",
+    flexWrap: "wrap",
+    gap: 8,
+  },
+  channelSummary: {
+    overflow: "hidden",
+    paddingHorizontal: 10,
+    paddingVertical: 7,
+    borderRadius: 999,
+    backgroundColor: "#fff7f0",
+    color: "#5b2d3a",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+  partnerActions: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  smallActionButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    minHeight: 42,
+    borderColor: "rgba(91, 45, 58, 0.18)",
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  smallActionText: {
+    color: "#5b2d3a",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  smallDangerButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    minHeight: 42,
+    borderColor: "rgba(154, 61, 49, 0.2)",
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  smallDangerText: {
+    color: "#9a3d31",
+    fontSize: 13,
+    fontWeight: "900",
+  },
+  emptyState: {
+    gap: 6,
+    padding: 16,
+    borderColor: "rgba(91, 45, 58, 0.1)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  emptyTitle: {
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  notificationRow: {
+    gap: 8,
+    padding: 16,
+    borderColor: "rgba(91, 45, 58, 0.12)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  notificationTopLine: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  notificationTitle: {
+    flex: 1,
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  notificationPreview: {
+    color: "#5d5251",
+    fontSize: 14,
+    lineHeight: 20,
   },
   messageChoice: {
     gap: 10,
