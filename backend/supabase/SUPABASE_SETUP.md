@@ -75,7 +75,40 @@ Never expose:
 - service role key;
 - database password;
 - Twilio auth token;
-- SendGrid API key;
+- Resend API key;
 - Apple private key.
 
 These will go into Supabase Edge Function secrets later.
+
+## 6. Deploy notification sending
+
+The mobile app prepares notification drafts. The real e-mail/SMS send happens from the Supabase Edge Function:
+
+```text
+backend/supabase/functions/send-cycle-notification/index.ts
+```
+
+Install and log in to the Supabase CLI, then link the project:
+
+```bash
+supabase login
+supabase link --project-ref your-project-ref
+```
+
+Set secrets directly in Supabase. Do not paste them in chat.
+
+```bash
+supabase secrets set RESEND_API_KEY=your_resend_key
+supabase secrets set RESEND_FROM_EMAIL="CycleCare <hello@your-domain.com>"
+supabase secrets set TWILIO_ACCOUNT_SID=your_twilio_sid
+supabase secrets set TWILIO_AUTH_TOKEN=your_twilio_token
+supabase secrets set TWILIO_FROM_PHONE=+33600000000
+```
+
+Deploy the function:
+
+```bash
+supabase functions deploy send-cycle-notification
+```
+
+For a first MVP test, configure Resend first and keep SMS disabled in the app until Twilio is ready.

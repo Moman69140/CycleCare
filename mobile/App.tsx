@@ -5,7 +5,7 @@ import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
 import type { CyclePhase } from "./src/lib/cycle";
 import { loadCycleProfile, saveCycleProfile } from "./src/lib/cycleProfile";
-import { saveSharingSetup } from "./src/lib/sharingSetup";
+import { saveSharingSetup, sendPreparedNotifications } from "./src/lib/sharingSetup";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
@@ -32,6 +32,8 @@ export default function App() {
   const [sharingConsent, setSharingConsent] = useState(false);
   const [shareStatus, setShareStatus] = useState("");
   const [isSavingShare, setIsSavingShare] = useState(false);
+  const [preparedEventIds, setPreparedEventIds] = useState<string[]>([]);
+  const [isSendingShare, setIsSendingShare] = useState(false);
 
   const cycle = getCycleInfo({
     lastPeriodDate,
@@ -171,7 +173,19 @@ export default function App() {
       messagePreview: selectedShareMessage.body,
     });
     setShareStatus(result.message);
+    setPreparedEventIds(result.ok ? result.eventIds ?? [] : []);
     setIsSavingShare(false);
+  }
+
+  async function handleSendPreparedNotifications() {
+    setIsSendingShare(true);
+    setShareStatus("");
+    const result = await sendPreparedNotifications(preparedEventIds);
+    setShareStatus(result.message);
+    if (result.ok) {
+      setPreparedEventIds([]);
+    }
+    setIsSendingShare(false);
   }
 
   return (
@@ -395,9 +409,18 @@ export default function App() {
             </TouchableOpacity>
             <TouchableOpacity style={styles.primaryButton} onPress={handleSaveSharingSetup} disabled={isSavingShare}>
               <Text style={styles.primaryButtonText}>
-                {isSavingShare ? "Preparation..." : "Preparer l'envoi"}
+                {isSavingShare ? "Preparation..." : "Preparer le message"}
               </Text>
             </TouchableOpacity>
+            {preparedEventIds.length > 0 ? (
+              <TouchableOpacity
+                style={styles.sendButton}
+                onPress={handleSendPreparedNotifications}
+                disabled={isSendingShare}
+              >
+                <Text style={styles.sendButtonText}>{isSendingShare ? "Envoi..." : "Envoyer maintenant"}</Text>
+              </TouchableOpacity>
+            ) : null}
             {shareStatus ? <Text style={styles.statusText}>{shareStatus}</Text> : null}
             <View style={styles.nextStepBadge}>
               <Text style={styles.nextStepBadgeText}>Backend d'envoi prepare : configuration suivante</Text>
@@ -788,6 +811,20 @@ const styles = StyleSheet.create({
   },
   primaryButtonText: {
     color: "#fff",
+    fontSize: 16,
+    fontWeight: "900",
+  },
+  sendButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    minHeight: 52,
+    borderColor: "#5b2d3a",
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  sendButtonText: {
+    color: "#5b2d3a",
     fontSize: 16,
     fontWeight: "900",
   },

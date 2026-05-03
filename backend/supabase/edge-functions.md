@@ -34,6 +34,12 @@ Variables nécessaires:
 - `TWILIO_AUTH_TOKEN`
 - `TWILIO_FROM_PHONE`
 
+App mobile:
+
+- `Preparer le message` cree les brouillons et la preuve de consentement.
+- `Envoyer maintenant` appelle cette fonction avec les `eventIds`.
+- Si les secrets Resend/Twilio ne sont pas encore configures, l'app garde le brouillon et affiche un message de configuration.
+
 À ajouter ensuite:
 
 - vérifier le quota gratuit ou Couple+;

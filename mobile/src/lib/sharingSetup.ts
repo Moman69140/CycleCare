@@ -110,7 +110,41 @@ export async function saveSharingSetup(input: SharingSetupInput): Promise<Sharin
 
   return {
     ok: true,
-    message: "Destinataire enregistre. Le message est pret pour l'envoi securise.",
+    message: "Message prepare. Verifie l'apercu, puis confirme l'envoi.",
     eventIds: notificationEvents?.map((event: { id: string }) => event.id) ?? [],
   };
+}
+
+export async function sendPreparedNotifications(eventIds: string[]): Promise<SharingSetupResult> {
+  if (!isSupabaseConfigured) {
+    return { ok: false, message: "Supabase n'est pas encore configure dans l'app mobile." };
+  }
+
+  if (eventIds.length === 0) {
+    return { ok: false, message: "Prepare d'abord un message avant de l'envoyer." };
+  }
+
+  const client = supabase as any;
+  const { data, error } = await client.functions.invoke("send-cycle-notification", {
+    body: { eventIds },
+  });
+
+  if (error) {
+    return {
+      ok: false,
+      message: "L'envoi n'est pas encore actif. Il faut deployer la fonction Supabase et configurer e-mail/SMS.",
+    };
+  }
+
+  const results = Array.isArray(data?.results) ? data.results : [];
+  const hasFailure = results.some((result: { ok?: boolean }) => !result.ok);
+
+  if (hasFailure) {
+    return {
+      ok: false,
+      message: "Le message est prepare, mais un canal d'envoi n'est pas encore configure.",
+    };
+  }
+
+  return { ok: true, message: "Message envoye au destinataire." };
 }
