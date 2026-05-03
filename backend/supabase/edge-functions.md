@@ -2,28 +2,43 @@
 
 ## send-cycle-notification
 
+Fichier:
+
+```text
+backend/supabase/functions/send-cycle-notification/index.ts
+```
+
 Entrée:
 
 ```json
 {
-  "partnerId": "uuid",
-  "channels": ["email", "sms"],
-  "phase": "luteal",
-  "messagePreview": "texte confirme par la femme",
-  "allowReply": true
+  "eventIds": ["uuid-notification-event-id"]
 }
 ```
 
 Responsabilités:
 
 - vérifier l’utilisateur connecté;
-- vérifier le consentement du partenaire;
+- vérifier le consentement du destinataire;
+- envoyer via Resend et/ou Twilio;
+- marquer l’événement `sent` ou `failed`;
+- retourner le statut.
+
+Variables nécessaires:
+
+- `SUPABASE_URL`
+- `SUPABASE_SERVICE_ROLE_KEY`
+- `RESEND_API_KEY`
+- `RESEND_FROM_EMAIL`
+- `TWILIO_ACCOUNT_SID`
+- `TWILIO_AUTH_TOKEN`
+- `TWILIO_FROM_PHONE`
+
+À ajouter ensuite:
+
 - vérifier le quota gratuit ou Couple+;
-- créer un événement d’envoi;
-- envoyer via Twilio et/ou SendGrid;
 - générer un token de réponse si réponse autorisée;
 - incrémenter le quota mensuel;
-- retourner le statut.
 
 ## inbound-partner-reply
 

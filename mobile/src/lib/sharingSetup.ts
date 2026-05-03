@@ -15,6 +15,7 @@ export type SharingSetupInput = {
 export type SharingSetupResult = {
   ok: boolean;
   message: string;
+  eventIds?: string[];
 };
 
 export async function saveSharingSetup(input: SharingSetupInput): Promise<SharingSetupResult> {
@@ -74,16 +75,19 @@ export async function saveSharingSetup(input: SharingSetupInput): Promise<Sharin
     ...(input.smsEnabled ? ["sms"] : []),
   ];
 
-  const { error: notificationError } = await client.from("notification_events").insert(
-    channels.map((channel) => ({
-      user_id: input.userId,
-      partner_id: partner.id,
-      channel,
-      status: "draft",
-      phase: input.phase,
-      message_preview: input.messagePreview,
-    })),
-  );
+  const { data: notificationEvents, error: notificationError } = await client
+    .from("notification_events")
+    .insert(
+      channels.map((channel) => ({
+        user_id: input.userId,
+        partner_id: partner.id,
+        channel,
+        status: "draft",
+        phase: input.phase,
+        message_preview: input.messagePreview,
+      })),
+    )
+    .select("id");
 
   if (notificationError) {
     return { ok: false, message: notificationError.message };
@@ -107,5 +111,6 @@ export async function saveSharingSetup(input: SharingSetupInput): Promise<Sharin
   return {
     ok: true,
     message: "Destinataire enregistre. Le message est pret pour l'envoi securise.",
+    eventIds: notificationEvents?.map((event: { id: string }) => event.id) ?? [],
   };
 }

@@ -3,6 +3,7 @@ import { SafeAreaView, ScrollView, StyleSheet, Text, TextInput, TouchableOpacity
 import * as Linking from "expo-linking";
 import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
+import type { CyclePhase } from "./src/lib/cycle";
 import { loadCycleProfile, saveCycleProfile } from "./src/lib/cycleProfile";
 import { saveSharingSetup } from "./src/lib/sharingSetup";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
@@ -38,7 +39,7 @@ export default function App() {
     periodLength: Number(periodLength) || 5,
   });
   const phase = cycle ? getPhaseContent(cycle.phase) : null;
-  const shareOptions = cycle && phase ? getShareOptions(cycleFirstName, phase.name, phase.partnerAdvice) : [];
+  const shareOptions = cycle ? getShareOptions(cycleFirstName, cycle.phase, cycle.day) : [];
   const selectedShareMessage = shareOptions[selectedMessageIndex] ?? shareOptions[0];
 
   useEffect(() => {
@@ -399,7 +400,7 @@ export default function App() {
             </TouchableOpacity>
             {shareStatus ? <Text style={styles.statusText}>{shareStatus}</Text> : null}
             <View style={styles.nextStepBadge}>
-              <Text style={styles.nextStepBadgeText}>L'envoi reel sera branche au backend SMS/e-mail</Text>
+              <Text style={styles.nextStepBadgeText}>Backend d'envoi prepare : configuration suivante</Text>
             </View>
           </View>
         ) : null}
@@ -416,25 +417,97 @@ function formatDate(date: Date) {
   }).format(date);
 }
 
-function getShareOptions(firstName: string, phaseName: string, partnerAdvice: string) {
+function getShareOptions(firstName: string, phase: CyclePhase, cycleDay: number) {
   const name = firstName.trim() || "Elle";
-  const phaseLabel = phaseName.toLowerCase();
+  const messages = shareMessageBank[phase];
+  const variantIndex = Math.max(0, cycleDay - 1) % messages.simple.length;
 
   return [
     {
       title: "Doux et simple",
-      body: `${name} est probablement en ${phaseLabel}. Un soutien calme et une attention simple peuvent faire du bien aujourd'hui.`,
+      body: messages.simple[variantIndex].replace("{name}", name),
     },
     {
       title: "Conseil concret",
-      body: `${name} est probablement en ${phaseLabel}. Idee du jour : ${partnerAdvice}`,
+      body: messages.concrete[variantIndex].replace("{name}", name),
     },
     {
       title: "Version intime",
-      body: `${name} partage un repere de cycle indicatif : ${phaseName}. Le plus important est d'ecouter, de demander et de rester doux.`,
+      body: messages.intimate[variantIndex].replace("{name}", name),
     },
   ];
 }
+
+const shareMessageBank: Record<CyclePhase, Record<"simple" | "concrete" | "intimate", string[]>> = {
+  menstruation: {
+    simple: [
+      "{name} peut avoir besoin de douceur aujourd'hui. Une presence calme, sans pression, peut vraiment compter.",
+      "Aujourd'hui, le plus aidant peut etre de ralentir un peu et de lui offrir un espace tranquille.",
+      "Un petit geste simple peut faire du bien : attention, chaleur, patience et zero pression.",
+    ],
+    concrete: [
+      "Idee du jour : propose une aide concrete, comme gerer un repas, une course ou un moment de repos.",
+      "Idee du jour : demande-lui ce qui l'aiderait maintenant, puis fais-le simplement, sans insister.",
+      "Idee du jour : cree un moment doux, avec moins de bruit, moins de demandes et plus de presence.",
+    ],
+    intimate: [
+      "{name} t'ouvre un repere personnel aujourd'hui. Le plus beau soutien : ecouter, proteger le calme et rester tendre.",
+      "Elle te partage un moment sensible. Ta douceur, ton respect et ta patience peuvent faire toute la difference.",
+      "Aujourd'hui, accompagne-la avec delicatesse : demande, ecoute, puis laisse-lui la place dont elle a besoin.",
+    ],
+  },
+  follicular: {
+    simple: [
+      "{name} peut retrouver de l'elan. C'est un bon moment pour encourager, proposer, et construire ensemble.",
+      "L'energie peut revenir progressivement. Une proposition legere et joyeuse peut etre bien recue.",
+      "Aujourd'hui, un projet simple ou une sortie douce peut nourrir votre connexion.",
+    ],
+    concrete: [
+      "Idee du jour : propose de planifier quelque chose ensemble, sans charger son agenda.",
+      "Idee du jour : encourage une envie ou un projet dont elle t'a parle recemment.",
+      "Idee du jour : fais de la place a une conversation positive, claire et complice.",
+    ],
+    intimate: [
+      "{name} partage un moment d'ouverture. Rejoins-la avec curiosite, attention et envie de construire a deux.",
+      "Elle peut avoir envie d'avancer. Sois present, enthousiaste, mais toujours a l'ecoute de son rythme.",
+      "C'est peut-etre un bon moment pour nourrir la complicite : propose, souris, et laissez-vous de l'espace.",
+    ],
+  },
+  ovulation: {
+    simple: [
+      "{name} peut apprecier un moment de qualite. Presence, attention et respect du consentement restent essentiels.",
+      "Aujourd'hui, mise sur la connexion : un vrai temps ensemble peut avoir beaucoup de valeur.",
+      "Une attention choisie, sincere et sans attente peut renforcer votre complicite.",
+    ],
+    concrete: [
+      "Idee du jour : propose un moment a deux, puis laisse-la choisir le rythme et l'ambiance.",
+      "Idee du jour : valorise-la avec sincerite et prevois un temps de qualite sans distraction.",
+      "Idee du jour : cree une occasion de vous retrouver, avec douceur et consentement clair.",
+    ],
+    intimate: [
+      "{name} te partage une envie de lien. Sois attentif a ses signaux, a ses mots et a son consentement.",
+      "Elle peut avoir envie de proximite. Le plus important : presence, respect et tendresse assumee.",
+      "Nourris la connexion sans pression : une parole douce, un geste choisi, et beaucoup d'ecoute.",
+    ],
+  },
+  luteal: {
+    simple: [
+      "{name} peut avoir besoin de stabilite. Une aide concrete et une parole calme peuvent apaiser la journee.",
+      "Aujourd'hui, la regularite et la douceur comptent. Evite les tensions inutiles et choisis la clarte.",
+      "Un environnement plus simple, plus pose, peut l'aider a se sentir soutenue.",
+    ],
+    concrete: [
+      "Idee du jour : allege une tache, anticipe un besoin pratique, et garde un ton doux.",
+      "Idee du jour : propose de simplifier la soiree et d'enlever une petite charge mentale.",
+      "Idee du jour : si un sujet est sensible, choisis le bon moment et commence par ecouter.",
+    ],
+    intimate: [
+      "{name} te partage un moment ou la securite emotionnelle peut compter davantage. Reste doux, fiable et present.",
+      "Elle peut avoir besoin de se sentir comprise. Une phrase calme et un geste concret valent beaucoup.",
+      "Aujourd'hui, choisis la tendresse stable : moins de debat, plus d'ecoute, plus d'aide reelle.",
+    ],
+  },
+};
 
 const styles = StyleSheet.create({
   safeArea: {
