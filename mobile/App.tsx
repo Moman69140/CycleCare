@@ -4,6 +4,7 @@ import * as Linking from "expo-linking";
 import { signInWithEmail, signOut, signUpWithEmail } from "./src/lib/auth";
 import { getCycleInfo, getPhaseContent } from "./src/lib/cycle";
 import { loadCycleProfile, saveCycleProfile } from "./src/lib/cycleProfile";
+import { saveSharingSetup } from "./src/lib/sharingSetup";
 import { isSupabaseConfigured, supabase } from "./src/lib/supabase";
 
 export default function App() {
@@ -21,6 +22,15 @@ export default function App() {
   const [cycleLength, setCycleLength] = useState("28");
   const [periodLength, setPeriodLength] = useState("5");
   const [hasSavedCycle, setHasSavedCycle] = useState(false);
+  const [selectedMessageIndex, setSelectedMessageIndex] = useState(0);
+  const [partnerName, setPartnerName] = useState("");
+  const [partnerEmail, setPartnerEmail] = useState("");
+  const [partnerPhone, setPartnerPhone] = useState("");
+  const [emailEnabled, setEmailEnabled] = useState(true);
+  const [smsEnabled, setSmsEnabled] = useState(false);
+  const [sharingConsent, setSharingConsent] = useState(false);
+  const [shareStatus, setShareStatus] = useState("");
+  const [isSavingShare, setIsSavingShare] = useState(false);
 
   const cycle = getCycleInfo({
     lastPeriodDate,
@@ -28,6 +38,8 @@ export default function App() {
     periodLength: Number(periodLength) || 5,
   });
   const phase = cycle ? getPhaseContent(cycle.phase) : null;
+  const shareOptions = cycle && phase ? getShareOptions(cycleFirstName, phase.name, phase.partnerAdvice) : [];
+  const selectedShareMessage = shareOptions[selectedMessageIndex] ?? shareOptions[0];
 
   useEffect(() => {
     if (!isSupabaseConfigured) {
@@ -136,6 +148,29 @@ export default function App() {
     setCycleStatus(result.message);
     setHasSavedCycle(result.ok);
     setIsSavingCycle(false);
+  }
+
+  async function handleSaveSharingSetup() {
+    if (!session?.user?.id || !cycle || !phase || !selectedShareMessage) {
+      setShareStatus("Complete d'abord l'etape 1 pour preparer le partage.");
+      return;
+    }
+
+    setIsSavingShare(true);
+    setShareStatus("");
+    const result = await saveSharingSetup({
+      userId: session.user.id,
+      partnerName,
+      partnerEmail,
+      partnerPhone,
+      emailEnabled,
+      smsEnabled,
+      consentAccepted: sharingConsent,
+      phase: phase.name,
+      messagePreview: selectedShareMessage.body,
+    });
+    setShareStatus(result.message);
+    setIsSavingShare(false);
   }
 
   return (
@@ -275,19 +310,96 @@ export default function App() {
         {hasSavedCycle && cycle && phase ? (
           <View style={styles.nextStepCard}>
             <Text style={styles.cardLabel}>Etape 2</Text>
-            <Text style={styles.sectionTitle}>Choisir ce que je partage</Text>
+            <Text style={styles.sectionTitle}>Choisir le message partage</Text>
             <Text style={styles.body}>
-              Ton cycle est pret. La prochaine etape sera d'ajouter un destinataire et de choisir les moments du cycle
-              qui peuvent lui etre envoyes.
+              Tu gardes le controle : choisis l'apercu, puis ajoute le destinataire qui pourra le recevoir.
             </Text>
-            <View style={styles.previewBox}>
-              <Text style={styles.previewLabel}>Apercu partage</Text>
-              <Text style={styles.previewText}>
-                {cycleFirstName || "Elle"} est en {phase.name.toLowerCase()}. {phase.partnerAdvice}
-              </Text>
+
+            {shareOptions.map((option, index) => {
+              const isSelected = selectedMessageIndex === index;
+              return (
+                <TouchableOpacity
+                  key={option.title}
+                  style={[styles.messageChoice, isSelected ? styles.messageChoiceSelected : null]}
+                  onPress={() => setSelectedMessageIndex(index)}
+                >
+                  <View style={styles.choiceHeader}>
+                    <Text style={styles.choiceTitle}>{option.title}</Text>
+                    <View style={[styles.radioOuter, isSelected ? styles.radioOuterSelected : null]}>
+                      {isSelected ? <View style={styles.radioInner} /> : null}
+                    </View>
+                  </View>
+                  <Text style={styles.previewText}>{option.body}</Text>
+                </TouchableOpacity>
+              );
+            })}
+
+            <View style={styles.formDivider} />
+
+            <Text style={styles.sectionTitle}>Destinataire</Text>
+            <TextInput
+              style={styles.input}
+              placeholder="Prenom du destinataire"
+              placeholderTextColor="#8b7d7c"
+              value={partnerName}
+              onChangeText={setPartnerName}
+            />
+            <View style={styles.channelRow}>
+              <TouchableOpacity
+                style={[styles.channelButton, emailEnabled ? styles.channelButtonActive : null]}
+                onPress={() => setEmailEnabled((value) => !value)}
+              >
+                <Text style={[styles.channelButtonText, emailEnabled ? styles.channelButtonTextActive : null]}>
+                  E-mail
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.channelButton, smsEnabled ? styles.channelButtonActive : null]}
+                onPress={() => setSmsEnabled((value) => !value)}
+              >
+                <Text style={[styles.channelButtonText, smsEnabled ? styles.channelButtonTextActive : null]}>SMS</Text>
+              </TouchableOpacity>
             </View>
+            {emailEnabled ? (
+              <TextInput
+                autoCapitalize="none"
+                keyboardType="email-address"
+                style={styles.input}
+                placeholder="Adresse e-mail du destinataire"
+                placeholderTextColor="#8b7d7c"
+                value={partnerEmail}
+                onChangeText={setPartnerEmail}
+              />
+            ) : null}
+            {smsEnabled ? (
+              <TextInput
+                keyboardType="phone-pad"
+                style={styles.input}
+                placeholder="Telephone du destinataire"
+                placeholderTextColor="#8b7d7c"
+                value={partnerPhone}
+                onChangeText={setPartnerPhone}
+              />
+            ) : null}
+            <TouchableOpacity
+              style={[styles.consentBox, sharingConsent ? styles.consentBoxActive : null]}
+              onPress={() => setSharingConsent((value) => !value)}
+            >
+              <View style={[styles.checkBox, sharingConsent ? styles.checkBoxActive : null]}>
+                {sharingConsent ? <Text style={styles.checkMark}>OK</Text> : null}
+              </View>
+              <Text style={styles.consentText}>
+                J'autorise CycleCare a preparer ce partage de donnees de cycle indicatives vers ce destinataire.
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity style={styles.primaryButton} onPress={handleSaveSharingSetup} disabled={isSavingShare}>
+              <Text style={styles.primaryButtonText}>
+                {isSavingShare ? "Preparation..." : "Preparer l'envoi"}
+              </Text>
+            </TouchableOpacity>
+            {shareStatus ? <Text style={styles.statusText}>{shareStatus}</Text> : null}
             <View style={styles.nextStepBadge}>
-              <Text style={styles.nextStepBadgeText}>Prochaine construction : destinataire</Text>
+              <Text style={styles.nextStepBadgeText}>L'envoi reel sera branche au backend SMS/e-mail</Text>
             </View>
           </View>
         ) : null}
@@ -302,6 +414,26 @@ function formatDate(date: Date) {
     month: "long",
     year: "numeric",
   }).format(date);
+}
+
+function getShareOptions(firstName: string, phaseName: string, partnerAdvice: string) {
+  const name = firstName.trim() || "Elle";
+  const phaseLabel = phaseName.toLowerCase();
+
+  return [
+    {
+      title: "Doux et simple",
+      body: `${name} est probablement en ${phaseLabel}. Un soutien calme et une attention simple peuvent faire du bien aujourd'hui.`,
+    },
+    {
+      title: "Conseil concret",
+      body: `${name} est probablement en ${phaseLabel}. Idee du jour : ${partnerAdvice}`,
+    },
+    {
+      title: "Version intime",
+      body: `${name} partage un repere de cycle indicatif : ${phaseName}. Le plus important est d'ecouter, de demander et de rester doux.`,
+    },
+  ];
 }
 
 const styles = StyleSheet.create({
@@ -432,6 +564,118 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: "700",
     lineHeight: 23,
+  },
+  messageChoice: {
+    gap: 10,
+    padding: 16,
+    borderColor: "rgba(91, 45, 58, 0.12)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  messageChoiceSelected: {
+    borderColor: "#c85a75",
+    backgroundColor: "#fffafb",
+  },
+  choiceHeader: {
+    alignItems: "center",
+    flexDirection: "row",
+    justifyContent: "space-between",
+    gap: 12,
+  },
+  choiceTitle: {
+    flex: 1,
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  radioOuter: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 22,
+    height: 22,
+    borderColor: "rgba(91, 45, 58, 0.22)",
+    borderRadius: 11,
+    borderWidth: 2,
+    backgroundColor: "#fff",
+  },
+  radioOuterSelected: {
+    borderColor: "#c85a75",
+  },
+  radioInner: {
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#c85a75",
+  },
+  formDivider: {
+    height: 1,
+    backgroundColor: "rgba(91, 45, 58, 0.12)",
+  },
+  channelRow: {
+    flexDirection: "row",
+    gap: 10,
+  },
+  channelButton: {
+    alignItems: "center",
+    justifyContent: "center",
+    flex: 1,
+    minHeight: 46,
+    borderColor: "rgba(91, 45, 58, 0.14)",
+    borderRadius: 999,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  channelButtonActive: {
+    borderColor: "#5b2d3a",
+    backgroundColor: "#5b2d3a",
+  },
+  channelButtonText: {
+    color: "#5b2d3a",
+    fontSize: 15,
+    fontWeight: "900",
+  },
+  channelButtonTextActive: {
+    color: "#fff",
+  },
+  consentBox: {
+    alignItems: "flex-start",
+    flexDirection: "row",
+    gap: 12,
+    padding: 14,
+    borderColor: "rgba(91, 45, 58, 0.12)",
+    borderRadius: 18,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  consentBoxActive: {
+    borderColor: "#c85a75",
+    backgroundColor: "#fffafb",
+  },
+  checkBox: {
+    alignItems: "center",
+    justifyContent: "center",
+    width: 24,
+    height: 24,
+    borderColor: "rgba(91, 45, 58, 0.22)",
+    borderRadius: 8,
+    borderWidth: 1,
+    backgroundColor: "#fff",
+  },
+  checkBoxActive: {
+    borderColor: "#c85a75",
+    backgroundColor: "#c85a75",
+  },
+  checkMark: {
+    color: "#fff",
+    fontSize: 9,
+    fontWeight: "900",
+  },
+  consentText: {
+    flex: 1,
+    color: "#5d5251",
+    fontSize: 14,
+    lineHeight: 20,
   },
   nextStepBadge: {
     alignItems: "center",
