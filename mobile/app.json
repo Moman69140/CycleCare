@@ -7,7 +7,7 @@
     "orientation": "portrait",
     "userInterfaceStyle": "light",
     "privacy": "unlisted",
-    "owner": "moman69140",
+    "owner": "moman140",
     "ios": {
       "supportsTablet": false,
       "bundleIdentifier": "com.cyclecare.app",
@@ -23,7 +23,10 @@
     },
     "extra": {
       "supabaseUrl": "",
-      "supabaseAnonKey": ""
+      "supabaseAnonKey": "",
+      "eas": {
+        "projectId": "6e6a7114-8ff3-41b7-be51-eb7f618d183c"
+      }
     }
   }
 }
